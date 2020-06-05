@@ -1,0 +1,172 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="jumbotron bg-info text-white">
+    <h1>Our Products</h1>
+    <p class="lead">Happy shopping...</p>
+</div>
+
+<div class="col-md-10 offset-md-1">
+    <div ng-app="myApp">
+        <div ng-controller="myCtrl" class="table-responsive ">
+            <table class="table table-striped table-hover">
+
+                <thead class="alert-success">
+                    <tr class="">
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    <tr ng-repeat="p in product">
+                        <td>{{p.ProductName}}</td>
+                        <td>{{p.Price}}</td>
+
+                        <td ng-show="{{p.Quantity!=0?true:false}}">{{p.Quantity}}</td>
+                        <td ng-show="{{p.Quantity==0?true:false}}"><span class="badge badge-danger">Out of Stock </span> </td>
+
+                        <td>
+                            <a class="btn" href="javascript:void(0);" ng-click="editData(p.ProductId);"> <i class="far fa-edit text-success"></i> </a>
+                            <a class="btn" ng-click="deleterecord(p.ProductId)"><i class="far fa-trash-alt text-danger"></i></a>
+                            <a class="btn" href="../CheckOut/Index/?id={{p.ProductId}}"><i class="text-info fa-1x fab fa-shopify"></i></a>
+                        </td>
+
+                    </tr>
+                </tbody>
+
+            </table>
+
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+
+                            <div class="col"><h4 class="modal-title" id="myModalLabel">Update Product</h4></div>
+                            <div class="col"><button type="button" class="close" data-dismiss="modal">×</button></div>
+                        </div>
+                        <div class="modal-body">
+                            <form>
+                                <div class="form-group" style="display:none">
+                                    <label for="txtProductId">ID</label>
+                                    <input type="text" class="form-control" id="txtProductId" placeholder="Id" ng-model="ProductId" disabled="disabled" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="txtProduct">Product *</label>
+                                    <input type="text" class="form-control" id="txtProduct" placeholder="Product" ng-model="ProductName" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="txtQuantity">Quantity *</label>
+                                    <input type="number" class="form-control" id="txtQuantity" placeholder="Quantity" ng-model="Quantity" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="txtPrice">Price *</label>
+                                    <input type="number" class="form-control" id="txtPrice" placeholder="price" ng-model="Price" />
+                                </div>
+
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <span id="lblMsg" class="badge badge-danger"></span>
+                            <button type="button" class="btn btn-primary" id="btnUpdate" style="display:none;" ng-click="Update();">Update</button>
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.4-build.3588/angular.min.js" type="text/javascript"></script>
+
+<script>
+    var app = angular.module("myApp", []);
+    app.controller("myCtrl", function ($scope, $http) {
+
+        getAllData();
+
+        $scope.deleterecord = (id) => {
+            varIsConf = confirm('Want to delete, Are you sure?');
+            if (varIsConf) {
+                $http.post('/Product/DeleteProduct/' + id).success(function () {
+                    getAllData();
+                }).error(function () {
+                    alert('errors');
+                });
+            }
+        }
+
+        function getAllData() {
+            $http.get("/Product/getProducts").then(function (d) {
+                $scope.product = d.data;
+            }, function (error) {
+                console.log(error);
+            });
+
+        }
+
+        $scope.editData = function (Id) {
+
+            $http.get("/Product/getProduct/" + Id).then(function (d) {
+                var selectedProduct = d.data;
+
+                console.log($scope.selectedProduct);
+
+                $scope.ProductId = selectedProduct.ProductId;
+                $scope.ProductName = selectedProduct.ProductName;
+                $scope.Quantity = selectedProduct.Quantity;
+                $scope.Price = selectedProduct.Price;
+
+                $('#myModal').modal('show');
+                $('#btnUpdate').show();
+            }, function (error) {
+                console.log(error);
+            });
+        }
+
+        $scope.Update = function () {
+            $scope.Product = {};
+            $scope.Product.ProductId = $scope.ProductId;
+            $scope.Product.ProductName = $scope.ProductName;
+            $scope.Product.Quantity = $scope.Quantity;
+            $scope.Product.Price = $scope.Price;
+
+            console.log($scope.ProductName);
+            if (typeof $scope.ProductName === 'undefined' || $scope.ProductName === '' || $scope.ProductName === null) {
+                $('#lblMsg').text('Enter Product name!');
+                return;
+            }
+
+            if (typeof $scope.Quantity === 'undefined' || $scope.Quantity <= 0) {
+                $('#lblMsg').text('Enter Quantity!');
+                return;
+            }
+
+            if (typeof $scope.Price === 'undefined' || $scope.Price <= 0) {
+                $('#lblMsg').text('Enter Product price!');
+                return;
+            }
+
+            $http({
+                method: "post",
+                url: "/Product/UpdateProduct",
+                datatype: "json",
+                data: JSON.stringify($scope.Product)
+            }).then(function (response) {
+                getAllData();
+                $scope.Product = "";
+                console.log(response);
+                $('#myModal').modal('hide');
+                $('#lblMsg').text('');
+            })
+
+        }
+
+    });
+</script>
